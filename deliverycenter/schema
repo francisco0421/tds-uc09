@@ -1,6 +1,3 @@
--- Cria Schema
--- Para fazer o upload em casa, deve-se baixar o dump e o script na Blackboard
--- Os comandos no cmd são: use db_delivrycenter, source C:\deliverycenter\2-dump-insert-data.sql(local do arquivo)
 CREATE database db_deliverycenter;
 
 USE db_deliverycenter;
@@ -83,7 +80,90 @@ CREATE TABLE `db_deliverycenter`.`orders` (
   `order_metric_cycle_time` text);
 
 -- 1)
-select * from hubs limit 10;
-select * from channels limit 10;
-select * from drivers limit 10;
-select * from deliveries limit 10;
+select count(hub_city), hub_city 
+from hubs 
+group by hub_city;
+
+-- 2)
+select count(order_id)
+from orders
+group by order_status;
+
+-- 3)
+select count(s.store_id), h.hub_city from stores s
+inner join hubs h
+on s.hub_id = h.hub_id
+group by h.hub_city;
+
+-- 4)
+select max(payment_amount), min(payment_amount) from payments;
+
+-- 5)
+select count(driver_type) 
+from drivers
+group by driver_type 
+order by max(driver_type);
+
+-- 6)
+select avg(delivery_distance_meters)
+from drivers as motoristas
+inner join deliveries as entregas
+on motoristas.driver_id = entregas.driver_id
+group by driver_modal
+limit 10;
+
+-- 7)
+SELECT s.store_id,s.store_name,
+AVG(o.order_amount) AS qtd_media
+FROM stores s
+JOIN orders o ON s.store_id = o.store_id
+GROUP BY s.store_id,s.store_name
+ORDER BY qtd_media DESC;
+
+-- 8)
+select count(*) as pedidos_sem_associacao
+from orders
+where store_id is null;
+
+-- 9)
+select sum(o.order_amount) as pedido_total
+from orders as o
+inner join channels as c on o.channel_id = c.channel_id
+where c.channel_name = 'FOOD PLACE';
+
+-- 10)
+select count(*) as cancelados
+from payments
+where payment_status = 'chargeback';
+
+-- 11)
+select avg(payment_amount) as cancelados_media
+from payments
+where payment_status = 'chargeback';
+
+-- 12)
+select payment_method, avg(payment_amount) as metodo_media
+from payments
+group by payment_method
+order by metodo_media desc;
+
+-- 13-)
+select payment_method
+from payments
+group by payment_method
+having avg(payment_amount) > 100;
+
+-- 14)
+select hubs.hub_state, stores.store_segment, channels.channel_type, avg(orders.order_amount) as qtd_media_pedidos from orders
+left join stores on orders.store_id = stores.store_id
+left join channels on orders.channel_id = channels.channel_id
+left join hubs on stores.hub_id = hubs.hub_id
+group by hubs.hub_state, stores.store_segment, channels.channel_type;
+
+-- 15)
+select hubs.hub_state, stores.store_segment, channels.channel_type from hubs
+right join stores on hubs.hub_id = stores.hub_id
+right join orders on stores.store_id = orders.store_id
+right join channels on orders.channel_id = channels.channel_id
+group by hubs.hub_state, stores.store_segment, channels.channel_type
+having avg(orders.order_amount) > 450;
